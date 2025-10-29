@@ -1,3 +1,5 @@
+#atividade
+
 '''
 numeros_de_atraso = int(input("Quantos atrasos você teve? "))
 if numeros_de_atraso >= 3:
@@ -9,6 +11,8 @@ elif numeros_de_atraso == 1 :
 else:
     print("você está liberado")
 '''
+#atividade
+
 '''
 numero_um = int(input("Digite o primeiro número: "))
 numero_dois = int(input("Digite o segundo número: "))
@@ -20,31 +24,34 @@ elif numero_um == numero_dois:
 else:
     print(f"O número {numero_um} é menor que o número {numero_dois}")
     '''
-#for item in range(2,11,2):
-#    print(item)
-#nomes = ["Ana", "Maria", "João", "Pedro"]
-#for nome in nomes:
- #   print(nome)
-#for letra in "Python":
- #   print(letra)
-#nomes = ["Ana", "Maria", "João", "Pedro"]
-#idades = [10, 15, 25, 30, 22, 28]
-#for indice in range(len(nomes)):
- #   print(f"{nomes[indice]} tem {idades[indice]} anos.")
-  #  if idades[indice] >= 18:
-   #     print("é maior de idade")
-    #else:
-     #   print("é menor de idade")
-#senhas = ["123", "abcde", "abcd1234", "senha12345"]
-#for senha in senhas:
- #   print(f"Sua senha é: {senha}")
-  #  if len(senha) < 6:
-   #     print("senha fraca")
-    #elif len(senha) >= 6 and len(senha) <= 10:
-     #   print("senha média")
-   # else:
-    #    print("senha forte")
 
+#atividade
+'''
+for item in range(2,11,2):
+    print(item)
+nomes = ["Ana", "Maria", "João", "Pedro"]
+for nome in nomes:
+    print(nome)
+for letra in "Python":
+    print(letra)
+nomes = ["Ana", "Maria", "João", "Pedro"]
+idades = [10, 15, 25, 30, 22, 28]
+for indice in range(len(nomes)):
+    print(f"{nomes[indice]} tem {idades[indice]} anos.")
+    if idades[indice] >= 18:
+        print("é maior de idade")
+    else:
+        print("é menor de idade")
+senhas = ["123", "abcde", "abcd1234", "senha12345"]
+for senha in senhas:
+    print(f"Sua senha é: {senha}")
+    if len(senha) < 6:
+        print("senha fraca")
+    elif len(senha) >= 6 and len(senha) <= 10:
+        print("senha média")
+    else:
+        print("senha forte")
+'''
 
 
 # while exemplo 1= quando quero que criar tentativas
@@ -148,3 +155,4 @@ elif velocidade > velocidade_maxima + 10:
 else:
     print("Você está multado em R$ 200,00")
  '''   
+
