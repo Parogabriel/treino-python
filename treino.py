@@ -359,3 +359,147 @@ print(f"Valor do Serviço Local: R$ {valor_servico_local:.2f}")
 print(f"Valor da Tarifa de Interurbanos: R$ {valor_interurbanos:.2f}")
 print(f"Valor Total da Conta: R$ {valor_conta:.2f}")
 '''
+
+#Escreva um algoritmo que leia o NOME, NÚMERO DE HORAS TRABALHADAS e SALÁRIO POR HORA de 10 funcionários da NEW EMPIRE CONFECÇÕES. Calcular e imprimir o salário líquido de cada um, sendo que:
+'''
+
+SALÁRIO BRUTO = HORAS TRABALHADAS * SALÁRIO POR HORA
+INSS = 11% DO SALÁRIO BRUTO
+SALÁRIO LÍQUIDO = SALÁRIO BRUTO - INSS
+
+
+for i in range(10):
+    nome = input("Digite o nome do funcionário: ")
+    horas_trabalhadas = float(input("Digite o número de horas trabalhadas: "))
+    salario_por_hora = float(input("Digite o salário por hora: "))
+    salario_bruto = horas_trabalhadas * salario_por_hora
+    inss = salario_bruto * 0.11
+    salario_liquido = salario_bruto - inss
+    print(f"O salário líquido de {nome} é R$ {salario_liquido:.2f}")
+'''
+#Escreva um algoritmo que leia o NOME, a MODALIDADE ESPORTIVA (1 = Voley, 2 = Basquete, 3 = Futsal), a IDADE e o SEXO (M ou F) de 10 atletas do clube "LES ENFANTS". Calcular e imprimir:
+'''
+Média de idade dos homens.
+Média de idade das mulheres.
+Porcentagem de mulheres matriculadas no basquete, em relação ao número de mulheres matriculadas.
+Número de homens com idade entre 25 e 30 anos.
+
+total_homens = 0
+total_mulheres = 0
+soma_idade_homens = 0
+soma_idade_mulheres = 0
+mulheres_basquete = 0
+for i in range(2):
+    nome = input("Digite o nome do atleta: ")
+    modalidade = int(input("Digite a modalidade esportiva (1 - Voley, 2 - Basquete, 3 - Futsal): "))
+    idade = int(input("Digite a idade do atleta: "))
+    sexo = input("Digite o sexo do atleta (M/F): ").upper()
+    if sexo == 'M':
+        total_homens += 1
+        soma_idade_homens += idade
+        if 25 <= idade <= 30:
+            total_homens_25_30 += 1
+    elif sexo == 'F':
+        total_mulheres += 1
+        soma_idade_mulheres += idade
+        if modalidade == 2:
+            mulheres_basquete += 1
+if total_homens > 0:
+    media_idade_homens = soma_idade_homens / total_homens
+    print(f"Média de idade dos homens: {media_idade_homens:.2f} anos")
+else:
+    print("Não há homens cadastrados.")
+if total_mulheres > 0:
+    media_idade_mulheres = soma_idade_mulheres / total_mulheres
+    porcentagem_mulheres_basquete = (mulheres_basquete / total_mulheres) * 100
+    print(f"Média de idade das mulheres: {media_idade_mulheres:.2f} anos")
+    print(f"Porcentagem de mulheres no basquete: {porcentagem_mulheres_basquete:.2f}%")
+else:
+    print("Não há mulheres cadastradas.")
+    '''
+#Construir um algoritmo que leia NOME e IDADE de 300 pessoas e que calcule e imprima:
+'''
+a) A soma de idade das pessoas.
+b) Os nomes das pessoas com idade maior ou igual a 21 anos.
+
+from tkinter.font import names
+import random
+
+
+soma_idades = 0
+nomes_maiores_21 = []
+
+primeiros_nomes = [
+    "Ana", "Maria", "João", "Pedro", "Gabriel", "Lucas", "Mariana", "Beatriz",
+    "Felipe", "Carla", "Bruno", "Rafael", "Juliana", "Camila", "Larissa",
+    "Thiago", "Daniel", "Luana", "Paulo", "Sofia", "Isabela", "Matheus",
+    "Gustavo", "Fernanda", "Diego", "André", "Rodrigo", "Carolina", "Renata",
+    "Eduardo", "Aline"
+
+for _ in range(300):
+    nome = random.choice(primeiros_nomes)
+    idade = random.randint(1, 23)
+    soma_idades += idade
+    if idade >= 21:
+        nomes_maiores_21.append(nome)
+
+print(f"Soma de idades: {soma_idades}")
+print("Nomes das pessoas com 21 anos ou mais:")
+for nome in nomes_maiores_21:
+    print(nome)
+    '''
+
+#Construir um algoritmo que leia NOME, ALTURA e SEXO de um grupo indeterminado de pessoas e que calcule e imprima:
+'''
+a) A média de altura dos homens.
+b) A maior altura.
+c) A menor altura.
+
+total_homens = 0
+soma_altura_homens = 0
+maior_altura = 0
+menor_altura = float('inf')
+while True:
+    nome = input("Digite o nome da pessoa (ou 'sair' para encerrar): ")
+    if nome.lower() == 'sair':
+        break
+    altura = float(input("Digite a altura da pessoa em metros: "))
+    sexo = input("Digite o sexo da pessoa (M/F): ").upper()
+    if sexo == 'M':
+        total_homens += 1
+        soma_altura_homens += altura
+    if altura > maior_altura:
+        maior_altura = altura
+    if altura < menor_altura:
+        menor_altura = altura
+if total_homens > 0:
+    media_altura_homens = soma_altura_homens / total_homens
+    print(f"Média de altura dos homens: {media_altura_homens:.2f} metros")
+else:
+    print("Não há homens cadastrados.")
+print(f"Maior altura: {maior_altura:.2f} metros")
+print(f"Menor altura: {menor_altura:.2f} metros")
+'''
+
+#Elaborar um algoritmo que leia NOME, HORAS TRABALHADAS, SALÁRIO-HORA e SEXO de um grupo de operários e que calcule e imprima:
+'''
+
+a) Salário total dos funcionários.
+b) O maior salário, juntamente com o Nome de quem o recebeu.
+
+total_salarios = 0
+maior_salario = 0
+nome_maior_salario = ''
+while True:
+    nome = input("Digite o nome do operário (ou 'sair' para encerrar): ")
+    if nome.lower() == 'sair':
+        break
+    horas_trabalhadas = float(input("Digite o número de horas trabalhadas: "))
+    salario_hora = float(input("Digite o salário por hora: "))
+    sexo = input("Digite o sexo do operário (M/F): ").upper()
+    salario = horas_trabalhadas * salario_hora
+    total_salarios += salario
+    if salario > maior_salario:
+        maior_salario = salario
+        nome_maior_salario = nome
+'''
