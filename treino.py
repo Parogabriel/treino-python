@@ -500,3 +500,66 @@ while True:
         maior_salario = salario
         nome_maior_salario = nome
 '''
+#Uma certa firma fez uma pesquisa de mercado para saber se as pessoas gostaram ou não de um certo produto lançado. Para isso, preencheu uma ficha com o SEXO do entrevistado e sua RESPOSTA (sim ou não). Sabendo-se que foram entrevistadas 2.000 pessoas, faça um algoritmo que calcule e imprima:
+#pessoas que responderam sim.
+#pessoas que responderam não.
+# a porcentagem de pessoas do sexo feminino que responderam sim em relação ao total de pessoas do sexo feminino entrevistadas.
+'''
+total_sim = 0
+total_nao = 0   
+total_feminino = 0
+total_feminino_sim = 0
+for i in range(2000):
+    sexo = input("Digite o sexo do entrevistado (M/F): ")
+    resposta = input("Você gostou do produto? (sim/não): ")
+    if resposta == 'sim':
+        total_sim += 1
+        if sexo == 'F':
+            total_feminino_sim += 1
+    elif resposta == 'não':
+        total_nao += 1
+    if sexo == 'F':
+        total_feminino += 1
+if total_feminino > 0:
+    porcentagem_feminino_sim = (total_feminino_sim / total_feminino) * 100
+    print(f"Porcentagem de mulheres que responderam sim: {porcentagem_feminino_sim:.2f}%")
+else:
+    print("Não há mulheres cadastradas.")
+print(f"Total de pessoas que responderam sim: {total_sim}")
+print(f"Total de pessoas que responderam não: {total_nao}")
+print(f"Total de mulheres entrevistadas: {total_feminino}")
+'''
+#O programador responsável pelo sistema do CEFET resolveu fazer um programa para processar as fichas com os dados dos alunos. Cada ficha contém o NOME, SEXO, IDADE, TURNO (1 para manhã, 2 para tarde e 3 para noite) e SÉRIE do aluno (1 para primeiro ano, 2 para segundo e 3 para terceiro). Construa um algoritmo que leia os dados dos alunos e calcule e imprima:
+#O numro de alunos matriculados no turno da noite.
+# O numero de alunos que estão na terceira série.
+#O numero de mulheres na segunda série.
+'''
+total_noite = 0
+total_terceira_serie = 0
+total_mulheres_segunda_serie = 0
+while True:
+    nome = input("Digite o nome do aluno (ou 'sair' para encerrar): ")
+    if nome  == 'sair':
+        break
+    sexo = input("Digite o sexo do aluno (M/F): ")
+    idade = int(input("Digite a idade do aluno: "))
+    turno = int(input("Digite o turno do aluno (1 - Manhã, 2 - Tarde, 3 - Noite): "))
+    serie = int(input("Digite a série do aluno (1 - Primeiro ano, 2 - Segundo ano, 3 - Terceiro ano): "))
+    if turno == 3:
+        total_noite += 1
+    if serie == 3:
+        total_terceira_serie += 1
+    if sexo == 'F' and serie == 2:
+        total_mulheres_segunda_serie += 1
+print(f"Total de alunos matriculados no turno da noite: {total_noite}")
+print(f"Total de alunos na terceira série: {total_terceira_serie}")
+print(f"Total de mulheres na segunda série: {total_mulheres_segunda_serie}")
+'''
+# Fazer contagem regressiva de 10 a 1
+'''
+time = 10
+while time >= 1:
+    print(time)
+    time -= 1
+print("foguete lançado!")
+'''
