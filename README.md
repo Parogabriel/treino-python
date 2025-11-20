@@ -12,10 +12,20 @@ O sistema permite:
 
 ## Como Executar
 
-Para executar o sistema interativo:
+### Sistema Interativo
+
+Para executar o sistema interativo com menu:
 
 ```bash
 python3 trabalho_oo.py
+```
+
+### Demonstração
+
+Para ver uma demonstração automatizada do sistema:
+
+```bash
+python3 demo.py
 ```
 
 ## Estrutura do Código
