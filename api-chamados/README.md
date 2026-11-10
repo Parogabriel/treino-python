@@ -2,7 +2,7 @@
 
 Projeto de estudo de back-end em Python para organizar chamados de suporte de internet.
 
-Por enquanto, só existe uma rota para conferir se o servidor está funcionando. O cadastro e o acompanhamento dos chamados serão os próximos passos.
+Já é possível conferir se o servidor está funcionando e cadastrar chamados. Os dados ficam em memória e são apagados ao reiniciar o programa. A consulta dos chamados ainda não foi implementada.
 
 ## Rodar
 
@@ -22,6 +22,23 @@ Abra http://127.0.0.1:8000/health no navegador. A resposta deve ser:
 
 Outros caminhos retornam 404 em JSON. O servidor só aceita conexões locais e serve para estudo.
 
+## Cadastrar um chamado
+
+Envie `POST /chamados` com título e descrição em JSON. No PowerShell:
+
+```powershell
+$dados = @{ titulo = 'Sem internet'; descricao = 'Roteador sem sinal' } | ConvertTo-Json
+Invoke-RestMethod -Uri http://127.0.0.1:8000/chamados -Method Post -ContentType 'application/json; charset=utf-8' -Body ([System.Text.Encoding]::UTF8.GetBytes($dados))
+```
+
+A resposta tem status 201 e o chamado cadastrado:
+
+```json
+{"id": 1, "titulo": "Sem internet", "descricao": "Roteador sem sinal"}
+```
+
+O ID aumenta a cada cadastro e volta a 1 quando o programa é reiniciado. Título e descrição precisam ser textos não vazios. JSON inválido e campos ausentes retornam 400. Espaços nas pontas dos textos são removidos.
+
 ## Testar
 
 ```bash
@@ -30,7 +47,7 @@ python -m unittest discover -s tests -v
 
 ## Próximos passos
 
-- Cadastrar chamados com título e descrição.
+- Ampliar os testes de validação do cadastro.
 - Salvar e consultar os chamados no SQLite.
 - Alterar o status de um chamado.
 - Filtrar por status e prioridade.

@@ -27,3 +27,9 @@ Antes de encerrar cada sessão:
 Para explicar o projeto numa entrevista, pratique: o que é uma requisição HTTP, por que usar cada status, como o JSON vira bytes e como os registros continuam existindo depois de reiniciar o programa.
 
 Não usar dados de clientes nem configurações reais do trabalho. Os exemplos devem ser fictícios. Autenticação e uso por vários usuários ficam para uma etapa posterior; esta versão é local.
+
+## Andamento
+
+- 09/11/2026: servidor local com `/health` e resposta 404 em JSON.
+- 10/11/2026: cadastro de chamados em memória, com ID e validação básica dos campos. Testes para cadastro, dados inválidos e IDs em requisições simultâneas.
+- Próxima sessão: ampliar os casos de validação, incluindo limites para título e descrição.
