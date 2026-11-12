@@ -8,7 +8,7 @@ O primeiro dia é o início do projeto; os demais dias são trabalho planejado. 
 | --- | --- | --- | --- |
 | 1 | Subir o servidor e criar `/health` | Receber 200 e JSON; conferir o 404 | `adiciona rota para conferir o servidor` |
 | 2 | Criar `POST /chamados`, ainda em memória | Enviar título e descrição; receber 201 e um id | `adiciona cadastro de chamados` |
-| 3 | Validar o cadastro | Título vazio, corpo sem JSON e campos ausentes retornam 400 | `valida os dados do chamado` |
+| 3 | Limitar título e descrição | Aceitar textos no limite e retornar 400 quando passar | `limita o tamanho dos campos do chamado` |
 | 4 | Salvar os chamados no SQLite, usando parâmetros no SQL | Reiniciar o servidor e manter os registros | `salva chamados no sqlite` |
 | 5 | Listar e buscar por id | Listagem vazia funciona; id ausente retorna 404 | `adiciona consulta de chamados` |
 | 6 | Alterar status: aberto, em atendimento e resolvido | Recusar status desconhecido; id ausente retorna 404 | `permite alterar o status do chamado` |
@@ -32,4 +32,5 @@ Não usar dados de clientes nem configurações reais do trabalho. Os exemplos d
 
 - 09/11/2026: servidor local com `/health` e resposta 404 em JSON.
 - 10/11/2026: cadastro de chamados em memória, com ID e validação básica dos campos. Testes para cadastro, dados inválidos e IDs em requisições simultâneas.
-- Próxima sessão: ampliar os casos de validação, incluindo limites para título e descrição.
+- 12/11/2026: limites para título e descrição, com testes para valores no limite e acima dele.
+- Próxima sessão: salvar os chamados no SQLite.

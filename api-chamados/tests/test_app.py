@@ -82,6 +82,21 @@ class ApiTests(unittest.TestCase):
                 self.assertEqual(self.consultar('/chamados', 'POST', corpo)[0], 400)
         self.assertEqual(self.servidor.chamados, [])
 
+    def test_rejeita_textos_acima_do_limite(self):
+        for dados in (
+            {'titulo': 'a' * 121, 'descricao': 'Sem sinal'},
+            {'titulo': 'Sem internet', 'descricao': 'a' * 2001},
+        ):
+            with self.subTest(campo='titulo' if len(dados['titulo']) > 120 else 'descricao'):
+                self.assertEqual(self.cadastrar(dados)[0], 400)
+        self.assertEqual(self.servidor.chamados, [])
+
+    def test_aceita_textos_no_limite_depois_de_remover_espacos(self):
+        status, chamado = self.cadastrar({'titulo': ' ' + 'é' * 120, 'descricao': 'a' * 2000 + ' '})
+        self.assertEqual(status, 201)
+        self.assertEqual(chamado['titulo'], 'é' * 120)
+        self.assertEqual(chamado['descricao'], 'a' * 2000)
+
     def test_post_em_rota_inexistente(self):
         self.assertEqual(self.consultar('/outra-rota', 'POST')[0], 404)
 

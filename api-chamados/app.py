@@ -40,11 +40,17 @@ class Handler(BaseHTTPRequestHandler):
             self.responder(400, {'erro': 'Informe título e descrição como textos não vazios'})
             return
 
+        titulo = dados['titulo'].strip()
+        descricao = dados['descricao'].strip()
+        if len(titulo) > 120 or len(descricao) > 2000:
+            self.responder(400, {'erro': 'O título aceita até 120 caracteres e a descrição até 2000'})
+            return
+
         with self.server.lock:
             chamado = {
                 'id': len(self.server.chamados) + 1,
-                'titulo': dados['titulo'].strip(),
-                'descricao': dados['descricao'].strip(),
+                'titulo': titulo,
+                'descricao': descricao,
             }
             self.server.chamados.append(chamado)
         self.responder(201, chamado)

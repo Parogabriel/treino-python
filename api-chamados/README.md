@@ -37,7 +37,7 @@ A resposta tem status 201 e o chamado cadastrado:
 {"id": 1, "titulo": "Sem internet", "descricao": "Roteador sem sinal"}
 ```
 
-O ID aumenta a cada cadastro e volta a 1 quando o programa é reiniciado. Título e descrição precisam ser textos não vazios. JSON inválido e campos ausentes retornam 400. Espaços nas pontas dos textos são removidos.
+O ID aumenta a cada cadastro e volta a 1 quando o programa é reiniciado. Título e descrição precisam ser textos não vazios. Após remover espaços nas pontas, o título aceita até 120 caracteres e a descrição até 2.000. JSON inválido, campos ausentes e textos acima dos limites retornam 400.
 
 ## Testar
 
@@ -47,7 +47,6 @@ python -m unittest discover -s tests -v
 
 ## Próximos passos
 
-- Ampliar os testes de validação do cadastro.
 - Salvar e consultar os chamados no SQLite.
 - Alterar o status de um chamado.
 - Filtrar por status e prioridade.
