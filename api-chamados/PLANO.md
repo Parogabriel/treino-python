@@ -33,4 +33,5 @@ Não usar dados de clientes nem configurações reais do trabalho. Os exemplos d
 - 09/11/2026: servidor local com `/health` e resposta 404 em JSON.
 - 10/11/2026: cadastro de chamados em memória, com ID e validação básica dos campos. Testes para cadastro, dados inválidos e IDs em requisições simultâneas.
 - 12/11/2026: limites para título e descrição, com testes para valores no limite e acima dele.
-- Próxima sessão: salvar os chamados no SQLite.
+- 12/11/2026: cadastro salvo no SQLite e teste de reinício do servidor.
+- Próxima sessão: listar os chamados e buscar por ID.

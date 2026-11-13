@@ -1,14 +1,31 @@
 import json
+import sqlite3
+from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from threading import Lock
+from pathlib import Path
 from urllib.parse import urlsplit
 
 
 class Servidor(ThreadingHTTPServer):
-    def __init__(self, endereco):
+    def __init__(self, endereco, banco=Path(__file__).with_name('chamados.db')):
+        self.banco = banco
+        with closing(sqlite3.connect(banco)) as conexao:
+            conexao.execute('''CREATE TABLE IF NOT EXISTS chamados (
+                id INTEGER PRIMARY KEY,
+                titulo TEXT NOT NULL,
+                descricao TEXT NOT NULL
+            )''')
+            conexao.commit()
         super().__init__(endereco, Handler)
-        self.chamados = []
-        self.lock = Lock()
+
+    def salvar_chamado(self, titulo, descricao):
+        with closing(sqlite3.connect(self.banco)) as conexao:
+            cursor = conexao.execute(
+                'INSERT INTO chamados (titulo, descricao) VALUES (?, ?)',
+                (titulo, descricao),
+            )
+            conexao.commit()
+            return cursor.lastrowid
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -46,14 +63,13 @@ class Handler(BaseHTTPRequestHandler):
             self.responder(400, {'erro': 'O título aceita até 120 caracteres e a descrição até 2000'})
             return
 
-        with self.server.lock:
-            chamado = {
-                'id': len(self.server.chamados) + 1,
-                'titulo': titulo,
-                'descricao': descricao,
-            }
-            self.server.chamados.append(chamado)
-        self.responder(201, chamado)
+        try:
+            chamado_id = self.server.salvar_chamado(titulo, descricao)
+        except sqlite3.Error as erro:
+            self.log_error('Erro ao salvar chamado: %s', erro)
+            self.responder(500, {'erro': 'Não foi possível salvar o chamado'})
+            return
+        self.responder(201, {'id': chamado_id, 'titulo': titulo, 'descricao': descricao})
 
     def responder(self, status, dados):
         corpo = json.dumps(dados, ensure_ascii=False).encode('utf-8')
