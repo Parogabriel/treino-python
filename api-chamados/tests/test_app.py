@@ -56,7 +56,24 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(self.consultar('/health?check=1')[0], 200)
 
     def test_rota_inexistente(self):
-        self.assertEqual(self.consultar('/chamados'), (404, {'erro': 'Rota não encontrada'}))
+        for caminho in ('/outra-rota', '/chamados/abc', '/chamados/1/outro'):
+            with self.subTest(caminho=caminho):
+                self.assertEqual(self.consultar(caminho), (404, {'erro': 'Rota não encontrada'}))
+
+    def test_lista_vazia(self):
+        self.assertEqual(self.consultar('/chamados'), (200, []))
+
+    def test_lista_chamados_na_ordem_de_cadastro(self):
+        _, primeiro = self.cadastrar({'titulo': 'Sem internet', 'descricao': 'Sem sinal'})
+        _, segundo = self.cadastrar({'titulo': 'Conexão lenta', 'descricao': 'Sinal fraco'})
+        self.assertEqual(self.consultar('/chamados'), (200, [primeiro, segundo]))
+
+    def test_busca_chamado_por_id(self):
+        _, chamado = self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem conexão'})
+        self.assertEqual(self.consultar(f'/chamados/{chamado["id"]}'), (200, chamado))
+
+    def test_busca_id_inexistente(self):
+        self.assertEqual(self.consultar('/chamados/999'), (404, {'erro': 'Chamado não encontrado'}))
 
     def cadastrar(self, dados):
         return self.consultar('/chamados', 'POST', json.dumps(dados).encode('utf-8'))
@@ -119,6 +136,7 @@ class ApiTests(unittest.TestCase):
         self.sessao.close()
 
         self.servidor = self.sessao.enter_context(servidor_rodando(self.banco))
+        self.assertEqual(self.consultar(f'/chamados/{primeiro["id"]}'), (200, primeiro))
         status, segundo = self.cadastrar({'titulo': 'Novo chamado', 'descricao': 'Sem sinal'})
         self.assertEqual(status, 201)
         self.assertEqual(segundo['id'], primeiro['id'] + 1)

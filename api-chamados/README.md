@@ -2,7 +2,7 @@
 
 Projeto de estudo de back-end em Python para organizar chamados de suporte de internet.
 
-Já é possível conferir se o servidor está funcionando e cadastrar chamados. O SQLite salva os dados em `chamados.db`, ao lado de `app.py`, e mantém os registros ao reiniciar o programa. A consulta pela API ainda não foi implementada.
+A API permite cadastrar, listar e consultar chamados por ID. O SQLite salva os dados em `chamados.db`, ao lado de `app.py`, e mantém os registros ao reiniciar o programa.
 
 ## Rodar
 
@@ -39,6 +39,15 @@ A resposta tem status 201 e o chamado cadastrado. Em um banco novo, o primeiro c
 
 O SQLite gera o ID e a numeração continua ao reiniciar. Título e descrição precisam ser textos não vazios. Após remover espaços nas pontas, o título aceita até 120 caracteres e a descrição até 2.000. JSON inválido, campos ausentes e textos acima dos limites retornam 400.
 
+## Consultar chamados
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/chamados
+Invoke-RestMethod http://127.0.0.1:8000/chamados/1
+```
+
+`GET /chamados` retorna a lista em ordem de ID, ou `[]` se não houver registros. `GET /chamados/1` retorna o chamado de ID 1, ou `404` se ele não existir.
+
 ## Testar
 
 ```bash
@@ -47,7 +56,6 @@ python -m unittest discover -s tests -v
 
 ## Próximos passos
 
-- Listar os chamados e consultar por ID.
 - Alterar o status de um chamado.
 - Filtrar por status e prioridade.
 

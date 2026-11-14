@@ -34,4 +34,5 @@ Não usar dados de clientes nem configurações reais do trabalho. Os exemplos d
 - 10/11/2026: cadastro de chamados em memória, com ID e validação básica dos campos. Testes para cadastro, dados inválidos e IDs em requisições simultâneas.
 - 12/11/2026: limites para título e descrição, com testes para valores no limite e acima dele.
 - 12/11/2026: cadastro salvo no SQLite e teste de reinício do servidor.
-- Próxima sessão: listar os chamados e buscar por ID.
+- 14/11/2026: listagem e busca por ID, com testes para banco vazio, ID ausente e consulta após reinício.
+- Próxima sessão: alterar o status de um chamado.

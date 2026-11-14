@@ -27,13 +27,44 @@ class Servidor(ThreadingHTTPServer):
             conexao.commit()
             return cursor.lastrowid
 
+    def consultar_chamados(self, chamado_id=None):
+        with closing(sqlite3.connect(self.banco)) as conexao:
+            conexao.row_factory = sqlite3.Row
+            if chamado_id is None:
+                linhas = conexao.execute('SELECT id, titulo, descricao FROM chamados ORDER BY id')
+            else:
+                linhas = conexao.execute(
+                    'SELECT id, titulo, descricao FROM chamados WHERE id = ?', (chamado_id,),
+                )
+            return [dict(linha) for linha in linhas]
+
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if urlsplit(self.path).path == '/health':
+        caminho = urlsplit(self.path).path
+        if caminho == '/health':
             self.responder(200, {'status': 'ok'})
-        else:
+            return
+
+        prefixo, _, chamado_id = caminho.rpartition('/')
+        lista = caminho == '/chamados'
+        if not lista and not (prefixo == '/chamados' and chamado_id.isascii() and chamado_id.isdecimal()):
             self.responder(404, {'erro': 'Rota não encontrada'})
+            return
+
+        try:
+            chamados = self.server.consultar_chamados(None if lista else chamado_id)
+        except sqlite3.Error as erro:
+            self.log_error('Erro ao consultar chamados: %s', erro)
+            self.responder(500, {'erro': 'Não foi possível consultar os chamados'})
+            return
+
+        if lista:
+            self.responder(200, chamados)
+        elif chamados:
+            self.responder(200, chamados[0])
+        else:
+            self.responder(404, {'erro': 'Chamado não encontrado'})
 
     def do_POST(self):
         if urlsplit(self.path).path != '/chamados':
