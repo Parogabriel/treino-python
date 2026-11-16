@@ -85,6 +85,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(status, 201)
         self.assertEqual(chamado, {
             'id': 1, 'titulo': 'Sem conexão', 'descricao': 'Roteador sem sinal.',
+            'status': 'aberto',
         })
         self.assertEqual(self.registros(), [(1, 'Sem conexão', 'Roteador sem sinal.')])
 
@@ -129,6 +130,42 @@ class ApiTests(unittest.TestCase):
 
     def test_post_em_rota_inexistente(self):
         self.assertEqual(self.consultar('/outra-rota', 'POST')[0], 404)
+
+    def test_atualiza_status_e_mantem_apos_reiniciar(self):
+        _, chamado = self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem conexão'})
+        caminho = f'/chamados/{chamado["id"]}'
+        for status in ('em atendimento', 'resolvido', 'aberto', 'resolvido'):
+            resposta = self.consultar(caminho, 'PATCH', json.dumps({'status': status}))
+            self.assertEqual(resposta, (200, {**chamado, 'status': status}))
+        self.sessao.close()
+        self.servidor = self.sessao.enter_context(servidor_rodando(self.banco))
+        atualizado = {**chamado, 'status': 'resolvido'}
+        self.assertEqual(self.consultar(caminho), (200, atualizado))
+        self.assertEqual(self.consultar('/chamados'), (200, [atualizado]))
+
+    def test_rejeita_status_invalido_sem_alterar_chamado(self):
+        _, chamado = self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem conexão'})
+        caminho = f'/chamados/{chamado["id"]}'
+        for corpo in ('{}', '{', '[]', '{"status": "cancelado"}', '{"status": 1}'):
+            with self.subTest(corpo=corpo):
+                self.assertEqual(self.consultar(caminho, 'PATCH', corpo)[0], 400)
+        self.assertEqual(self.consultar(caminho), (200, chamado))
+
+    def test_atualiza_id_inexistente(self):
+        resposta = self.consultar('/chamados/999', 'PATCH', '{"status": "resolvido"}')
+        self.assertEqual(resposta, (404, {'erro': 'Chamado não encontrado'}))
+
+    def test_preserva_chamados_do_banco_anterior(self):
+        banco_antigo = self.banco.with_name('antigo.db')
+        with closing(sqlite3.connect(banco_antigo)) as conexao:
+            conexao.execute('CREATE TABLE chamados (id INTEGER PRIMARY KEY, titulo TEXT NOT NULL, descricao TEXT NOT NULL)')
+            conexao.execute('INSERT INTO chamados VALUES (?, ?, ?)', (7, 'Falha', 'Sem sinal'))
+            conexao.commit()
+        with servidor_rodando(banco_antigo) as servidor:
+            self.servidor = servidor
+            self.assertEqual(self.consultar('/chamados/7'), (200, {
+                'id': 7, 'titulo': 'Falha', 'descricao': 'Sem sinal', 'status': 'aberto',
+            }))
 
     def test_chamados_permanecem_depois_de_reiniciar(self):
         status, primeiro = self.cadastrar({'titulo': "Cabo d'água", 'descricao': 'Sem conexão'})

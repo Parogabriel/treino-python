@@ -2,7 +2,7 @@
 
 Projeto de estudo de back-end em Python para organizar chamados de suporte de internet.
 
-A API permite cadastrar, listar e consultar chamados por ID. O SQLite salva os dados em `chamados.db`, ao lado de `app.py`, e mantém os registros ao reiniciar o programa.
+A API permite cadastrar, listar, consultar e atualizar o status dos chamados. O SQLite salva os dados em `chamados.db`, ao lado de `app.py`, e mantém os registros ao reiniciar o programa.
 
 ## Rodar
 
@@ -34,7 +34,7 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/chamados -Method Post -ContentType 
 A resposta tem status 201 e o chamado cadastrado. Em um banco novo, o primeiro chamado tem ID 1:
 
 ```json
-{"id": 1, "titulo": "Sem internet", "descricao": "Roteador sem sinal"}
+{"id": 1, "titulo": "Sem internet", "descricao": "Roteador sem sinal", "status": "aberto"}
 ```
 
 O SQLite gera o ID e a numeração continua ao reiniciar. Título e descrição precisam ser textos não vazios. Após remover espaços nas pontas, o título aceita até 120 caracteres e a descrição até 2.000. JSON inválido, campos ausentes e textos acima dos limites retornam 400.
@@ -48,6 +48,17 @@ Invoke-RestMethod http://127.0.0.1:8000/chamados/1
 
 `GET /chamados` retorna a lista em ordem de ID, ou `[]` se não houver registros. `GET /chamados/1` retorna o chamado de ID 1, ou `404` se ele não existir.
 
+## Alterar o status
+
+```powershell
+$dados = @{ status = 'em atendimento' } | ConvertTo-Json
+Invoke-RestMethod -Uri http://127.0.0.1:8000/chamados/1 -Method Patch -ContentType 'application/json' -Body $dados
+```
+
+`PATCH /chamados/1` retorna `200` com o chamado atualizado. Os valores aceitos são `aberto`, `em atendimento` e `resolvido`. Um status inválido retorna `400`; um ID que não existe retorna `404`.
+
+Chamados novos começam como `aberto`. Ao iniciar com um banco de uma versão anterior, os registros existentes são mantidos e também recebem o status `aberto`.
+
 ## Testar
 
 ```bash
@@ -56,7 +67,6 @@ python -m unittest discover -s tests -v
 
 ## Próximos passos
 
-- Alterar o status de um chamado.
-- Filtrar por status e prioridade.
+- Adicionar prioridade e filtro por status.
 
 O plano de trabalho está em [PLANO.md](PLANO.md).

@@ -5,16 +5,23 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+STATUS_VALIDOS = ('aberto', 'em atendimento', 'resolvido')
+
 
 class Servidor(ThreadingHTTPServer):
     def __init__(self, endereco, banco=Path(__file__).with_name('chamados.db')):
         self.banco = banco
         with closing(sqlite3.connect(banco)) as conexao:
+            conexao.execute('BEGIN IMMEDIATE')
             conexao.execute('''CREATE TABLE IF NOT EXISTS chamados (
                 id INTEGER PRIMARY KEY,
                 titulo TEXT NOT NULL,
-                descricao TEXT NOT NULL
+                descricao TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'aberto'
             )''')
+            colunas = [coluna[1] for coluna in conexao.execute('PRAGMA table_info(chamados)')]
+            if 'status' not in colunas:
+                conexao.execute("ALTER TABLE chamados ADD COLUMN status TEXT NOT NULL DEFAULT 'aberto'")
             conexao.commit()
         super().__init__(endereco, Handler)
 
@@ -31,12 +38,24 @@ class Servidor(ThreadingHTTPServer):
         with closing(sqlite3.connect(self.banco)) as conexao:
             conexao.row_factory = sqlite3.Row
             if chamado_id is None:
-                linhas = conexao.execute('SELECT id, titulo, descricao FROM chamados ORDER BY id')
+                linhas = conexao.execute('SELECT id, titulo, descricao, status FROM chamados ORDER BY id')
             else:
                 linhas = conexao.execute(
-                    'SELECT id, titulo, descricao FROM chamados WHERE id = ?', (chamado_id,),
+                    'SELECT id, titulo, descricao, status FROM chamados WHERE id = ?', (chamado_id,),
                 )
             return [dict(linha) for linha in linhas]
+
+    def atualizar_status(self, chamado_id, status):
+        with closing(sqlite3.connect(self.banco)) as conexao:
+            conexao.row_factory = sqlite3.Row
+            cursor = conexao.execute('UPDATE chamados SET status = ? WHERE id = ?', (status, chamado_id))
+            if cursor.rowcount == 0:
+                return None
+            chamado = conexao.execute(
+                'SELECT id, titulo, descricao, status FROM chamados WHERE id = ?', (chamado_id,),
+            ).fetchone()
+            conexao.commit()
+            return dict(chamado)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -72,11 +91,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
-            tamanho = int(self.headers.get('Content-Length', '0'))
-            if tamanho <= 0:
-                raise ValueError
-            dados = json.loads(self.rfile.read(tamanho))
-        except (ValueError, UnicodeDecodeError):
+            dados = self.ler_json()
+        except ValueError:
             self.responder(400, {'erro': 'Envie um corpo JSON válido'})
             return
 
@@ -100,7 +116,43 @@ class Handler(BaseHTTPRequestHandler):
             self.log_error('Erro ao salvar chamado: %s', erro)
             self.responder(500, {'erro': 'Não foi possível salvar o chamado'})
             return
-        self.responder(201, {'id': chamado_id, 'titulo': titulo, 'descricao': descricao})
+        self.responder(201, {'id': chamado_id, 'titulo': titulo, 'descricao': descricao, 'status': 'aberto'})
+
+    def do_PATCH(self):
+        caminho = urlsplit(self.path).path
+        prefixo, _, chamado_id = caminho.rpartition('/')
+        if prefixo != '/chamados' or not (chamado_id.isascii() and chamado_id.isdecimal()):
+            self.responder(404, {'erro': 'Rota não encontrada'})
+            return
+
+        try:
+            dados = self.ler_json()
+        except ValueError:
+            self.responder(400, {'erro': 'Envie um corpo JSON válido'})
+            return
+
+        status = dados.get('status') if isinstance(dados, dict) else None
+        if status not in STATUS_VALIDOS:
+            self.responder(400, {'erro': 'Status deve ser aberto, em atendimento ou resolvido'})
+            return
+
+        try:
+            chamado = self.server.atualizar_status(chamado_id, status)
+        except sqlite3.Error as erro:
+            self.log_error('Erro ao atualizar status: %s', erro)
+            self.responder(500, {'erro': 'Não foi possível atualizar o status do chamado'})
+            return
+
+        if chamado is None:
+            self.responder(404, {'erro': 'Chamado não encontrado'})
+        else:
+            self.responder(200, chamado)
+
+    def ler_json(self):
+        tamanho = int(self.headers.get('Content-Length', '0'))
+        if tamanho <= 0:
+            raise ValueError
+        return json.loads(self.rfile.read(tamanho))
 
     def responder(self, status, dados):
         corpo = json.dumps(dados, ensure_ascii=False).encode('utf-8')
