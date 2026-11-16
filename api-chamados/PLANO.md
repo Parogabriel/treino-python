@@ -36,4 +36,5 @@ Não usar dados de clientes nem configurações reais do trabalho. Os exemplos d
 - 12/11/2026: cadastro salvo no SQLite e teste de reinício do servidor.
 - 14/11/2026: listagem e busca por ID, com testes para banco vazio, ID ausente e consulta após reinício.
 - 16/11/2026: alteração de status, com preservação dos chamados gravados na versão anterior.
-- Próxima sessão: adicionar prioridade e filtro por status.
+- 16/11/2026: prioridade no cadastro e filtro por status, com preservação dos registros anteriores.
+- Próxima sessão: limitar o tamanho das requisições e paginar a listagem.

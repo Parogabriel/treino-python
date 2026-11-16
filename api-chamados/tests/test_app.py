@@ -86,6 +86,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(chamado, {
             'id': 1, 'titulo': 'Sem conexão', 'descricao': 'Roteador sem sinal.',
             'status': 'aberto',
+            'prioridade': 'normal',
         })
         self.assertEqual(self.registros(), [(1, 'Sem conexão', 'Roteador sem sinal.')])
 
@@ -165,7 +166,70 @@ class ApiTests(unittest.TestCase):
             self.servidor = servidor
             self.assertEqual(self.consultar('/chamados/7'), (200, {
                 'id': 7, 'titulo': 'Falha', 'descricao': 'Sem sinal', 'status': 'aberto',
+                'prioridade': 'normal',
             }))
+
+    def test_aceita_cada_prioridade(self):
+        for prioridade in ('baixa', 'normal', 'alta'):
+            with self.subTest(prioridade=prioridade):
+                status, chamado = self.cadastrar({
+                    'titulo': 'Falha', 'descricao': 'Sem sinal', 'prioridade': prioridade,
+                })
+                self.assertEqual(status, 201)
+                self.assertEqual(chamado['prioridade'], prioridade)
+                self.assertEqual(self.consultar(f'/chamados/{chamado["id"]}'), (200, chamado))
+
+    def test_rejeita_prioridade_invalida_sem_salvar(self):
+        for prioridade in ('urgente', '', None, 1, [], {}):
+            with self.subTest(prioridade=prioridade):
+                self.assertEqual(self.cadastrar({
+                    'titulo': 'Falha', 'descricao': 'Sem sinal', 'prioridade': prioridade,
+                })[0], 400)
+        self.assertEqual(self.registros(), [])
+
+    def test_filtra_por_cada_status(self):
+        esperados = {}
+        for status in ('aberto', 'em atendimento', 'resolvido'):
+            _, chamado = self.cadastrar({'titulo': status, 'descricao': 'Teste do filtro'})
+            if status != 'aberto':
+                _, chamado = self.consultar(f'/chamados/{chamado["id"]}', 'PATCH', json.dumps({'status': status}))
+            esperados[status] = chamado
+        for status, chamado in esperados.items():
+            with self.subTest(status=status):
+                caminho = '/chamados?status=' + status.replace(' ', '%20')
+                self.assertEqual(self.consultar(caminho), (200, [chamado]))
+        self.assertEqual(self.consultar('/chamados'), (200, list(esperados.values())))
+
+    def test_filtro_sem_resultado(self):
+        self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem sinal'})
+        self.assertEqual(self.consultar('/chamados?status=resolvido'), (200, []))
+
+    def test_rejeita_filtro_invalido(self):
+        for filtro in ('status=', 'status=cancelado', 'status=aberto&status=resolvido'):
+            with self.subTest(filtro=filtro):
+                self.assertEqual(self.consultar('/chamados?' + filtro)[0], 400)
+
+    def test_preserva_status_ao_migrar_prioridade(self):
+        banco_antigo = self.banco.with_name('com-status.db')
+        with closing(sqlite3.connect(banco_antigo)) as conexao:
+            conexao.execute('CREATE TABLE chamados (id INTEGER PRIMARY KEY, titulo TEXT NOT NULL, descricao TEXT NOT NULL, status TEXT NOT NULL)')
+            conexao.execute('INSERT INTO chamados VALUES (?, ?, ?, ?)', (8, 'Falha', 'Sem sinal', 'resolvido'))
+            conexao.commit()
+        with servidor_rodando(banco_antigo) as servidor:
+            self.servidor = servidor
+            self.assertEqual(self.consultar('/chamados/8'), (200, {
+                'id': 8, 'titulo': 'Falha', 'descricao': 'Sem sinal',
+                'status': 'resolvido', 'prioridade': 'normal',
+            }))
+
+    def test_prioridade_permanece_apos_patch_e_reinicio(self):
+        _, chamado = self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem sinal', 'prioridade': 'alta'})
+        caminho = f'/chamados/{chamado["id"]}'
+        esperado = {**chamado, 'status': 'resolvido'}
+        self.assertEqual(self.consultar(caminho, 'PATCH', '{"status": "resolvido"}'), (200, esperado))
+        self.sessao.close()
+        self.servidor = self.sessao.enter_context(servidor_rodando(self.banco))
+        self.assertEqual(self.consultar(caminho), (200, esperado))
 
     def test_chamados_permanecem_depois_de_reiniciar(self):
         status, primeiro = self.cadastrar({'titulo': "Cabo d'água", 'descricao': 'Sem conexão'})
