@@ -7,6 +7,12 @@ from urllib.parse import parse_qs, urlsplit
 
 STATUS_VALIDOS = ('aberto', 'em atendimento', 'resolvido')
 PRIORIDADES_VALIDAS = ('baixa', 'normal', 'alta')
+LIMITE_CORPO = 32 * 1024
+TAMANHO_PAGINA = 20
+
+
+class CorpoMuitoGrande(ValueError):
+    pass
 
 
 class Servidor(ThreadingHTTPServer):
@@ -38,7 +44,7 @@ class Servidor(ThreadingHTTPServer):
             conexao.commit()
             return cursor.lastrowid
 
-    def consultar_chamados(self, chamado_id=None, status=None):
+    def consultar_chamados(self, chamado_id=None, status=None, pagina=1, limite=TAMANHO_PAGINA):
         with closing(sqlite3.connect(self.banco)) as conexao:
             conexao.row_factory = sqlite3.Row
             campos = 'SELECT id, titulo, descricao, status, prioridade FROM chamados'
@@ -46,11 +52,19 @@ class Servidor(ThreadingHTTPServer):
                 linhas = conexao.execute(
                     campos + ' WHERE id = ?', (chamado_id,),
                 )
-            elif status is not None:
-                linhas = conexao.execute(campos + ' WHERE status = ? ORDER BY id', (status,))
+                return [dict(linha) for linha in linhas]
             else:
-                linhas = conexao.execute(campos + ' ORDER BY id')
-            return [dict(linha) for linha in linhas]
+                deslocamento = (pagina - 1) * limite
+                if status is not None:
+                    linhas = conexao.execute(
+                        campos + ' WHERE status = ? ORDER BY id LIMIT ? OFFSET ?',
+                        (status, limite, deslocamento),
+                    )
+                else:
+                    linhas = conexao.execute(
+                        campos + ' ORDER BY id LIMIT ? OFFSET ?', (limite, deslocamento),
+                    )
+                return [dict(linha) for linha in linhas]
 
     def atualizar_status(self, chamado_id, status):
         with closing(sqlite3.connect(self.banco)) as conexao:
@@ -80,8 +94,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         status = None
+        pagina = 1
+        limite = TAMANHO_PAGINA
+        parametros = parse_qs(url.query, keep_blank_values=True) if lista else {}
         if lista:
-            filtros = parse_qs(url.query, keep_blank_values=True).get('status')
+            filtros = parametros.get('status')
             if filtros is not None:
                 if len(filtros) != 1 or filtros[0] not in STATUS_VALIDOS:
                     self.responder(400, {'erro': 'Informe um único status: aberto, em atendimento ou resolvido'})
@@ -89,7 +106,16 @@ class Handler(BaseHTTPRequestHandler):
                 status = filtros[0]
 
         try:
-            chamados = self.server.consultar_chamados(None if lista else chamado_id, status)
+            pagina = self.ler_inteiro(parametros, 'pagina', 1, 1_000_000)
+            limite = self.ler_inteiro(parametros, 'limite', TAMANHO_PAGINA, 100)
+        except ValueError as erro:
+            self.responder(400, {'erro': str(erro)})
+            return
+
+        try:
+            chamados = self.server.consultar_chamados(
+                None if lista else chamado_id, status, pagina, limite,
+            )
         except sqlite3.Error as erro:
             self.log_error('Erro ao consultar chamados: %s', erro)
             self.responder(500, {'erro': 'Não foi possível consultar os chamados'})
@@ -109,6 +135,9 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             dados = self.ler_json()
+        except CorpoMuitoGrande as erro:
+            self.responder(413, {'erro': str(erro)})
+            return
         except ValueError:
             self.responder(400, {'erro': 'Envie um corpo JSON válido'})
             return
@@ -152,6 +181,9 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             dados = self.ler_json()
+        except CorpoMuitoGrande as erro:
+            self.responder(413, {'erro': str(erro)})
+            return
         except ValueError:
             self.responder(400, {'erro': 'Envie um corpo JSON válido'})
             return
@@ -173,10 +205,25 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.responder(200, chamado)
 
+    def ler_inteiro(self, parametros, nome, padrao, maximo):
+        valores = parametros.get(nome)
+        if valores is None:
+            return padrao
+        if len(valores) == 1:
+            valor = valores[0]
+            if len(valor) <= len(str(maximo)) and valor.isascii() and valor.isdecimal():
+                numero = int(valor)
+                if 1 <= numero <= maximo:
+                    return numero
+        raise ValueError(f'Informe um único valor inteiro de 1 a {maximo} para {nome}')
+
     def ler_json(self):
         tamanho = int(self.headers.get('Content-Length', '0'))
         if tamanho <= 0:
             raise ValueError
+        if tamanho > LIMITE_CORPO:
+            self.close_connection = True
+            raise CorpoMuitoGrande('O corpo da requisição deve ter até 32 KiB')
         return json.loads(self.rfile.read(tamanho))
 
     def responder(self, status, dados):
