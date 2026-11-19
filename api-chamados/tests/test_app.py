@@ -209,6 +209,73 @@ class ApiTests(unittest.TestCase):
             with self.subTest(filtro=filtro):
                 self.assertEqual(self.consultar('/chamados?' + filtro)[0], 400)
 
+    def test_paginacao_padrao(self):
+        chamados = []
+        for numero in range(22):
+            status, chamado = self.cadastrar({'titulo': f'Chamado {numero}', 'descricao': 'Sem sinal'})
+            self.assertEqual(status, 201)
+            chamados.append(chamado)
+        self.assertEqual(self.consultar('/chamados'), (200, chamados[:20]))
+        self.assertEqual(self.consultar('/chamados?pagina=2'), (200, chamados[20:]))
+        self.assertEqual(self.consultar('/chamados?pagina=3'), (200, []))
+        self.assertEqual(self.consultar('/chamados/22'), (200, chamados[-1]))
+
+    def test_pagina_com_limite_e_filtro(self):
+        abertos = []
+        for numero in range(7):
+            _, chamado = self.cadastrar({'titulo': f'Chamado {numero}', 'descricao': 'Sem sinal'})
+            if numero % 2 == 0:
+                self.consultar(f'/chamados/{chamado["id"]}', 'PATCH', '{"status": "resolvido"}')
+            else:
+                abertos.append(chamado)
+        self.assertEqual(self.consultar('/chamados?status=aberto&limite=2'), (200, abertos[:2]))
+        self.assertEqual(self.consultar('/chamados?status=aberto&limite=2&pagina=2'), (200, abertos[2:]))
+        self.assertEqual(self.consultar('/chamados?status=aberto&limite=2&pagina=3'), (200, []))
+
+    def test_rejeita_paginacao_invalida(self):
+        for parametro in ('pagina', 'limite'):
+            for valor in ('', '0', '-1', '1.5', 'abc', '%2B1', '%201', '%D9%A1', '999999999999999999999'):
+                with self.subTest(parametro=parametro, valor=valor):
+                    self.assertEqual(self.consultar(f'/chamados?{parametro}={valor}')[0], 400)
+            with self.subTest(parametro=parametro, repetido=True):
+                self.assertEqual(self.consultar(f'/chamados?{parametro}=1&{parametro}=2')[0], 400)
+        for query in ('pagina=1000001', 'limite=101'):
+            with self.subTest(query=query):
+                self.assertEqual(self.consultar('/chamados?' + query)[0], 400)
+
+    def test_aceita_extremos_da_paginacao(self):
+        _, chamado = self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem sinal'})
+        self.assertEqual(self.consultar('/chamados?pagina=1&limite=1'), (200, [chamado]))
+        self.assertEqual(self.consultar('/chamados?pagina=1&limite=100'), (200, [chamado]))
+        self.assertEqual(self.consultar('/chamados?pagina=1000000&limite=100'), (200, []))
+
+    def test_rejeita_cadastro_acima_de_32_kib_sem_salvar(self):
+        corpo = b'{"titulo": "Falha", "descricao": "Sem sinal"}'.ljust(32769, b' ')
+        status, resposta = self.consultar('/chamados', 'POST', corpo)
+        self.assertEqual(status, 413)
+        self.assertIn('erro', resposta)
+        self.assertEqual(self.registros(), [])
+
+    def test_rejeita_patch_acima_de_32_kib_sem_alterar(self):
+        _, chamado = self.cadastrar({'titulo': 'Falha', 'descricao': 'Sem sinal'})
+        caminho = f'/chamados/{chamado["id"]}'
+        corpo = b'{"status": "resolvido"}'.ljust(32769, b' ')
+        status, resposta = self.consultar(caminho, 'PATCH', corpo)
+        self.assertEqual(status, 413)
+        self.assertIn('erro', resposta)
+        self.assertEqual(self.consultar(caminho), (200, chamado))
+
+    def test_aceita_corpo_com_exatos_32_kib(self):
+        corpo = json.dumps({'titulo': 'Conexão lenta', 'descricao': 'Sinal fraco'}, ensure_ascii=False)
+        status, chamado = self.consultar('/chamados', 'POST', corpo.encode('utf-8').ljust(32768, b' '))
+        self.assertEqual(status, 201)
+        self.assertEqual(chamado['titulo'], 'Conexão lenta')
+        caminho = f'/chamados/{chamado["id"]}'
+        corpo = b'{"status": "resolvido"}'.ljust(32768, b' ')
+        esperado = {**chamado, 'status': 'resolvido'}
+        self.assertEqual(self.consultar(caminho, 'PATCH', corpo), (200, esperado))
+        self.assertEqual(self.consultar(caminho), (200, esperado))
+
     def test_preserva_status_ao_migrar_prioridade(self):
         banco_antigo = self.banco.with_name('com-status.db')
         with closing(sqlite3.connect(banco_antigo)) as conexao:
